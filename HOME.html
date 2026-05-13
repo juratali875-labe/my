@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spacebar Clicker</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial;
+}
+
+body{
+    background:#0f1015;
+    color:white;
+    overflow-x:hidden;
+}
+
+/* TOP */
+
+.top{
+    text-align:center;
+    padding:30px 15px;
+}
+
+.score{
+    font-size:90px;
+    font-weight:bold;
+}
+
+.stats{
+    margin-top:10px;
+    font-size:22px;
+    color:#00d26a;
+    font-weight:bold;
+}
+
+/* XP BAR */
+
+.xpBar{
+    width:80%;
+    max-width:700px;
+    height:20px;
+    background:#222;
+    border-radius:20px;
+    margin:20px auto;
+    overflow:hidden;
+}
+
+.xpFill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#00ff88,#00d26a);
+    transition:0.3s;
+}
+
+/* SPACE */
+
+.space-area{
+    width:85%;
+    max-width:900px;
+    margin:30px auto;
+}
+
+.space-btn{
+    width:100%;
+    height:140px;
+    border:none;
+    border-radius:20px;
+    background:linear-gradient(to bottom,#444,#111);
+    color:white;
+    font-size:40px;
+    letter-spacing:12px;
+    font-weight:bold;
+    cursor:pointer;
+
+    box-shadow:
+        inset 0 4px 8px rgba(255,255,255,0.2),
+        0 10px 20px rgba(0,0,0,0.6);
+
+    transition:0.05s;
+}
+
+.space-btn:active{
+    transform:translateY(8px);
+}
+
+/* SHOP */
+
+.shop{
+    width:92%;
+    max-width:1000px;
+    margin:auto;
+    padding-bottom:100px;
+}
+
+.card{
+    background:linear-gradient(135deg,#6a2cff,#2d74ff);
+    border-radius:25px;
+    padding:25px;
+    position:relative;
+    overflow:hidden;
+    margin-bottom:25px;
+    animation:fade 0.4s;
+}
+
+.level{
+    position:absolute;
+    top:15px;
+    right:20px;
+    font-size:45px;
+    opacity:0.7;
+    font-weight:bold;
+}
+
+.icon{
+    position:absolute;
+    left:-10px;
+    bottom:-20px;
+    font-size:90px;
+}
+
+.card h2{
+    font-size:32px;
+}
+
+.card p{
+    margin-top:15px;
+    line-height:1.7;
+    font-size:20px;
+}
+
+.buy{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:14px;
+    background:white;
+    color:black;
+    font-size:22px;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:18px;
+}
+
+.buy:hover{
+    opacity:0.9;
+}
+
+/* FLOAT TEXT */
+
+.float{
+    position:fixed;
+    color:#00ff88;
+    font-size:28px;
+    font-weight:bold;
+    pointer-events:none;
+    animation:floatUp 1s linear forwards;
+    z-index:999;
+}
+
+@keyframes floatUp{
+    0%{
+        opacity:1;
+        transform:translateY(0);
+    }
+    100%{
+        opacity:0;
+        transform:translateY(-80px);
+    }
+}
+
+@keyframes fade{
+    from{
+        opacity:0;
+        transform:translateY(20px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+@media(max-width:700px){
+
+    .score{
+        font-size:55px;
+    }
+
+    .space-btn{
+        height:110px;
+        font-size:28px;
+        letter-spacing:7px;
+    }
+
+    .card h2{
+        font-size:25px;
+    }
+
+}
+
+</style>
+</head>
+<body>
+
+<div class="top">
+
+    <div class="score" id="score">0</div>
+
+    <div class="stats">
+        ⚡ Click:
+        <span id="clickText">1</span>
+
+        |
+
+        ⏱ CPS:
+        <span id="cpsText">0</span>
+
+        |
+
+        🏆 Level:
+        <span id="levelText">1</span>
+    </div>
+
+    <div class="xpBar">
+        <div class="xpFill" id="xpFill"></div>
+    </div>
+
+</div>
+
+<div class="space-area">
+
+    <button class="space-btn"
+    id="spaceBtn"
+    onclick="clickCoin(event)">
+
+        SPACEBAR
+
+    </button>
+
+</div>
+
+<div class="shop" id="shop"></div>
+
+<script>
+
+/* DATA */
+
+let coins = 0;
+let clickPower = 1;
+let cps = 0;
+let level = 1;
+
+/* ELEMENTS */
+
+const score = document.getElementById("score");
+const clickText = document.getElementById("clickText");
+const cpsText = document.getElementById("cpsText");
+const levelText = document.getElementById("levelText");
+const xpFill = document.getElementById("xpFill");
+
+/* UI */
+
+function updateUI(){
+
+    score.innerText =
+        Math.floor(coins).toLocaleString();
+
+    clickText.innerText =
+        clickPower.toLocaleString();
+
+    cpsText.innerText =
+        cps.toFixed(1);
+
+    level =
+        Math.floor(coins / 1000) + 1;
+
+    levelText.innerText = level;
+
+    let xp =
+        (coins % 1000) / 10;
+
+    xpFill.style.width = xp + "%";
+
+}
+
+/* FLOAT TEXT */
+
+function createFloat(x,y,text){
+
+    let div =
+        document.createElement("div");
+
+    div.className = "float";
+
+    div.innerText = text;
+
+    div.style.left = x + "px";
+    div.style.top = y + "px";
+
+    document.body.appendChild(div);
+
+    setTimeout(()=>{
+        div.remove();
+    },1000);
+
+}
+
+/* CLICK */
+
+function clickCoin(e){
+
+    coins += clickPower;
+
+    updateUI();
+
+    createFloat(
+        e.clientX,
+        e.clientY,
+        "+" + clickPower
+    );
+
+}
+
+/* SPACE */
+
+document.addEventListener("keydown",function(e){
+
+    if(e.code === "Space"){
+
+        e.preventDefault();
+
+        coins += clickPower;
+
+        updateUI();
+
+    }
+
+});
+
+/* SHOP */
+
+const upgrades = [
+
+{
+    name:"Spider Web Shooter",
+    desc:"Quick click upgrade",
+    price:50,
+    click:1,
+    auto:0,
+    icon:"🕸️",
+    level:0,
+    unlocked:true
+},
+
+{
+    name:"Captain Shield",
+    desc:"Small CPS booster",
+    price:150,
+    click:0,
+    auto:2,
+    icon:"🛡️",
+    level:0,
+    unlocked:false
+},
+
+{
+    name:"Iron Reactor",
+    desc:"Huge click power",
+    price:500,
+    click:5,
+    auto:3,
+    icon:"⚡",
+    level:0,
+    unlocked:false
+},
+
+{
+    name:"Infinity Glove",
+    desc:"Massive speed",
+    price:1500,
+    click:20,
+    auto:15,
+    icon:"💎",
+    level:0,
+    unlocked:false
+}
+
+];
+
+for(let i=1;i<=50;i++){
+
+    upgrades.push({
+
+        name:"Mega Upgrade "+i,
+
+        desc:"Ultra upgrade",
+
+        price:
+        Math.floor(Math.random()*10000)+3000,
+
+        click:
+        Math.floor(Math.random()*100)+5,
+
+        auto:
+        Math.floor(Math.random()*50)+5,
+
+        icon:
+        ["🔥","🚀","⭐","☄️","⚔️"]
+        [Math.floor(Math.random()*5)],
+
+        level:0,
+
+        unlocked:false
+
+    });
+
+}
+
+const shop =
+document.getElementById("shop");
+
+function renderShop(){
+
+    shop.innerHTML = "";
+
+    upgrades.forEach((u,index)=>{
+
+        if(!u.unlocked) return;
+
+        let card =
+        document.createElement("div");
+
+        card.className = "card";
+
+        card.innerHTML = `
+
+        <div class="level">
+            ${u.level}
+        </div>
+
+        <div class="icon">
+            ${u.icon}
+        </div>
+
+        <h2>${u.name}</h2>
+
+        <p>
+
+        ${u.desc}<br><br>
+
+        ⚡ +${u.click} Click<br>
+
+        ⏱ +${u.auto} CPS<br>
+
+        💰 ${Math.floor(u.price).toLocaleString()}
+
+        </p>
+
+        <button class="buy"
+        onclick="buyUpgrade(${index})">
+
+        BUY
+
+        </button>
+
+        `;
+
+        shop.appendChild(card);
+
+    });
+
+}
+
+/* BUY */
+
+function buyUpgrade(index){
+
+    let u = upgrades[index];
+
+    if(coins >= u.price){
+
+        coins -= u.price;
+
+        clickPower += u.click;
+
+        cps += u.auto;
+
+        u.level++;
+
+        u.price *= 1.4;
+
+        if(upgrades[index+1]){
+
+            upgrades[index+1]
+            .unlocked = true;
+
+        }
+
+        updateUI();
+
+        renderShop();
+
+    }
+
+}
+
+/* AUTO */
+
+setInterval(function(){
+
+    coins += cps / 10;
+
+    updateUI();
+
+},100);
+
+/* SAVE */
+
+setInterval(function(){
+
+    localStorage.setItem(
+        "spaceSave",
+
+        JSON.stringify({
+            coins,
+            clickPower,
+            cps,
+            upgrades
+        })
+
+    );
+
+},3000);
+
+/* LOAD */
+
+const save =
+JSON.parse(localStorage.getItem("spaceSave"));
+
+if(save){
+
+    coins = save.coins;
+    clickPower = save.clickPower;
+    cps = save.cps;
+    upgrades.splice(
+        0,
+        upgrades.length,
+        ...save.upgrades
+    );
+
+}
+
+/* START */
+
+renderShop();
+
+updateUI();
+
+</script>
+
+</body>
+</html>
